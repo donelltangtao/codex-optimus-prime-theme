@@ -22,6 +22,14 @@ any time.
 
 The optional Prime Knight pet experiment is not part of v1.
 
+## v1.0.1 patch
+
+- Reveals the hourly background through Codex and ChatGPT home-mode controls.
+- Fixes remaining opaque suggestion cards, composers, output/source panels,
+  writing cards, and code-block headers.
+- Keeps native text, controls, geometry, click regions, and all 24 backgrounds
+  unchanged.
+
 ## Requirements
 
 - macOS on Apple silicon or Intel.
@@ -32,7 +40,7 @@ The optional Prime Knight pet experiment is not part of v1.
 ## Install
 
 1. Download and unzip
-   `codex-optimus-prime-theme-v1.0.0-macos.zip` from the GitHub Release.
+   `codex-optimus-prime-theme-v1.0.1-macos.zip` from the GitHub Release.
 2. Double-click `Install Prime Knight Theme.command`.
 3. Double-click `Start Prime Knight Theme.command`.
 4. Double-click `Verify Prime Knight Theme.command` to confirm the theme is
