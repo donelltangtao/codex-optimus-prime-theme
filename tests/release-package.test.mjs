@@ -37,7 +37,7 @@ async function listTree(root, relative = "") {
 test("release metadata declares the public v1 product", async () => {
   const pkg = JSON.parse(await fs.readFile("package.json", "utf8"));
   assert.equal(pkg.name, "codex-prime-knight-theme");
-  assert.equal(pkg.version, "1.0.0");
+  assert.equal(pkg.version, "1.0.1");
   assert.equal(pkg.engines.node, ">=20.10.0");
   assert.match(await fs.readFile("README.md", "utf8"), /codex擎天柱主题 v1/i);
   assert.match(await fs.readFile("README.zh-CN.md", "utf8"), /双击.*Install Prime Knight Theme\.command/s);

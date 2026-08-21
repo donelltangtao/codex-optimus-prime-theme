@@ -12,7 +12,7 @@ import { scanPaths } from "./privacy-scan.mjs";
 
 const execFile = promisify(execFileCallback);
 const SCRIPT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const VERSION = "1.0.0";
+const VERSION = "1.0.1";
 const REPOSITORY_DIRECTORY = `codex-optimus-prime-theme-v${VERSION}`;
 const ARCHIVE_NAME = `${REPOSITORY_DIRECTORY}-macos.zip`;
 const FIXED_TIME = new Date("1980-01-01T00:00:00.000Z");

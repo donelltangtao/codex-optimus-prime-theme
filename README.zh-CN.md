@@ -15,7 +15,7 @@
 ## 下载与安装
 
 1. 在 GitHub Release 下载
-   `codex-optimus-prime-theme-v1.0.0-macos.zip` 并解压。
+   `codex-optimus-prime-theme-v1.0.1-macos.zip` 并解压。
 2. 双击 `Install Prime Knight Theme.command` 完成安装。
 3. 双击 `Start Prime Knight Theme.command` 打开独立主题窗口。
 4. 双击 `Verify Prime Knight Theme.command`，看到验证通过即可正常使用。
@@ -52,3 +52,9 @@ MIT 代码许可的单独复用范围。本项目与 OpenAI、Hasbro、Paramount
 Optimus Prime、电影造型、商标或角色形象的任何权利。
 
 出现问题时请查看 [故障排查](docs/TROUBLESHOOTING.md)。
+
+## v1.0.1 补丁内容
+
+- 修复 Codex 与 ChatGPT 新建页模式切换、四张建议卡片和底部输入框的遮挡；
+- 修复输出内容/来源浮层、写作卡片和滚动后代码块标题栏的剩余遮挡；
+- 不改原生文字、按钮、尺寸、位置、点击区域和 24 张小时背景。

@@ -13,6 +13,10 @@ const NATIVE_SURFACE_ATTRIBUTE = "data-prime-knight-native-surface";
 const NATIVE_SIDEBAR_ATTRIBUTE = "data-prime-knight-native-sidebar";
 const NATIVE_COMPOSER_SURFACE_ATTRIBUTE = "data-prime-knight-native-composer-surface";
 const NATIVE_COMPOSER_BACKDROP_ATTRIBUTE = "data-prime-knight-native-composer-backdrop";
+const NATIVE_HOME_MODE_TRACK_ATTRIBUTE = "data-prime-knight-native-home-mode-track";
+const NATIVE_HOME_MODE_SELECTION_ATTRIBUTE = "data-prime-knight-native-home-mode-selection";
+const NATIVE_HOME_COMPOSER_SURFACE_ATTRIBUTE = "data-prime-knight-native-home-composer-surface";
+const NATIVE_HOME_SUGGESTION_ATTRIBUTE = "data-prime-knight-native-home-suggestion";
 const NATIVE_SIDE_PANEL_ATTRIBUTE = "data-prime-knight-native-side-panel";
 const NATIVE_SIDE_PANEL_COVER_ATTRIBUTE = "data-prime-knight-native-side-panel-cover";
 const NATIVE_OUTPUT_POPOVER_ATTRIBUTE = "data-prime-knight-native-output-popover";
@@ -70,6 +74,10 @@ function clearNativeSurfaceMarkers(document) {
     NATIVE_SIDEBAR_ATTRIBUTE,
     NATIVE_COMPOSER_SURFACE_ATTRIBUTE,
     NATIVE_COMPOSER_BACKDROP_ATTRIBUTE,
+    NATIVE_HOME_MODE_TRACK_ATTRIBUTE,
+    NATIVE_HOME_MODE_SELECTION_ATTRIBUTE,
+    NATIVE_HOME_COMPOSER_SURFACE_ATTRIBUTE,
+    NATIVE_HOME_SUGGESTION_ATTRIBUTE,
     NATIVE_SIDE_PANEL_ATTRIBUTE,
     NATIVE_SIDE_PANEL_COVER_ATTRIBUTE,
     NATIVE_OUTPUT_POPOVER_ATTRIBUTE,
@@ -100,10 +108,202 @@ function hasVisibleBackground(style) {
   return true;
 }
 
+function nativeHomeModeSurfaces(document, viewport) {
+  const matches = [...document.querySelectorAll('[role="group"]')].map((group) => {
+    if (typeof group?.getBoundingClientRect !== "function") return null;
+    const groupRect = group.getBoundingClientRect();
+    if (!hasFiniteRect(groupRect)
+      || groupRect.top < -4
+      || groupRect.top > 64
+      || groupRect.width < 120
+      || groupRect.width > 320
+      || groupRect.height < 24
+      || groupRect.height > 48
+      || groupRect.left < viewport.width * 0.3
+      || groupRect.right > viewport.width * 0.8) return null;
+
+    const buttons = [...group.querySelectorAll("button")].filter((button) => {
+      const rect = button.getBoundingClientRect?.();
+      return hasFiniteRect(rect)
+        && rect.width >= groupRect.width * 0.35
+        && rect.width <= groupRect.width * 0.65
+        && rect.height >= 20
+        && rect.height <= 40;
+    });
+    if (buttons.length !== 2
+      || buttons.filter((button) => button.getAttribute("aria-pressed") === "true").length !== 1
+      || buttons.filter((button) => button.getAttribute("aria-pressed") === "false").length !== 1) return null;
+
+    const buttonRects = buttons.map((button) => button.getBoundingClientRect());
+    const spans = [...(group.childNodes ?? [])].filter((node) => String(node?.tagName).toLowerCase() === "span");
+    const styled = spans.map((element) => {
+      let style;
+      try {
+        style = document.defaultView?.getComputedStyle?.(element);
+      } catch {
+        return null;
+      }
+      const rect = element.getBoundingClientRect?.();
+      return hasFiniteRect(rect) && hasVisibleBackground(style) ? { element, rect, style } : null;
+    }).filter(Boolean);
+    const track = styled.find(({ rect, style }) => style.position === "absolute"
+      && rect.width >= groupRect.width * 0.9
+      && Math.abs(rect.left - groupRect.left) <= 6
+      && Math.abs(rect.right - groupRect.right) <= 6
+      && Math.abs(rect.top - groupRect.top) <= 4);
+    const selection = styled.find(({ rect }) => rect.width >= groupRect.width * 0.35
+      && rect.width <= groupRect.width * 0.65
+      && rect.left >= groupRect.left - 4
+      && rect.right <= groupRect.right + 4
+      && buttonRects.some((buttonRect) => Math.abs(rect.top - buttonRect.top) <= 4));
+    return track && selection ? { group, track: track.element, selection: selection.element } : null;
+  }).filter(Boolean);
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function nativeHomeComposerSurface(document, viewport, homeMode) {
+  if (!homeMode) return null;
+  const modeRect = homeMode.group.getBoundingClientRect();
+  const modeCenter = modeRect.left + (modeRect.width / 2);
+  const candidates = [...document.querySelectorAll('[role="textbox"]')].map((textbox) => {
+    const textboxRect = textbox.getBoundingClientRect?.();
+    if (!hasFiniteRect(textboxRect) || textboxRect.width < 240 || textboxRect.height < 16) return null;
+    for (let current = textbox.parentElement, depth = 0; current && depth < 8; current = current.parentElement, depth += 1) {
+      const rect = current.getBoundingClientRect?.();
+      if (!hasFiniteRect(rect)) continue;
+      let style;
+      try {
+        style = document.defaultView?.getComputedStyle?.(current);
+      } catch {
+        continue;
+      }
+      const radius = String(style?.borderRadius ?? "");
+      const center = rect.left + (rect.width / 2);
+      if (hasVisibleBackground(style)
+        && radius !== ""
+        && radius !== "0px"
+        && rect.width >= 320
+        && rect.width <= viewport.width * 0.8
+        && rect.height >= 40
+        && rect.height <= 160
+        && rect.top >= viewport.height * 0.25
+        && rect.bottom <= viewport.height * 0.75
+        && Math.abs(center - modeCenter) <= 32
+        && rect.left <= textboxRect.left
+        && rect.right >= textboxRect.right) return current;
+    }
+    return null;
+  }).filter(Boolean);
+  return [...new Set(candidates)].length === 1 ? candidates[0] : null;
+}
+
+function nativeCodexHomeSurfaces(document, viewport, workspaceLeft) {
+  const buttons = [...document.querySelectorAll("button")];
+  const cardCandidates = buttons.filter((button) => {
+    const rect = button.getBoundingClientRect?.();
+    if (!hasFiniteRect(rect)) return false;
+    let style;
+    try {
+      style = document.defaultView?.getComputedStyle?.(button);
+    } catch {
+      return false;
+    }
+    const radius = String(style?.borderRadius ?? "");
+    const elementChildren = [...(button.childNodes ?? [])]
+      .filter((node) => typeof node?.tagName === "string");
+    return hasVisibleBackground(style)
+      && radius !== ""
+      && radius !== "0px"
+      && rect.left >= workspaceLeft - 4
+      && rect.right <= viewport.width + 4
+      && rect.top >= viewport.height * 0.25
+      && rect.top <= viewport.height * 0.75
+      && rect.width >= 140
+      && rect.width <= 240
+      && rect.height >= 72
+      && rect.height <= 140
+      && elementChildren.length === 2;
+  });
+  const cardSet = new Set(cardCandidates);
+  const possibleGroups = new Set();
+  for (const card of cardCandidates) {
+    for (let current = card.parentElement, depth = 0; current && depth < 5; current = current.parentElement, depth += 1) {
+      possibleGroups.add(current);
+    }
+  }
+  const workspaceCenter = workspaceLeft + ((viewport.width - workspaceLeft) / 2);
+  const groups = [...possibleGroups].map((container) => {
+    const rect = container.getBoundingClientRect?.();
+    if (!hasFiniteRect(rect)
+      || rect.left < workspaceLeft - 4
+      || rect.right > viewport.width + 4
+      || rect.height < 72
+      || rect.height > 160
+      || Math.abs((rect.left + (rect.width / 2)) - workspaceCenter) > 32) return null;
+    const cards = [...container.querySelectorAll("button")].filter((button) => cardSet.has(button));
+    if (cards.length !== 4 || container.querySelectorAll("button").length !== 4) return null;
+    const ordered = cards.map((card) => ({ card, rect: card.getBoundingClientRect() }))
+      .sort((first, second) => first.rect.left - second.rect.left);
+    if (ordered.some(({ rect: cardRect }) => Math.abs(cardRect.top - rect.top) > 4
+      || Math.abs(cardRect.bottom - rect.bottom) > 4)) return null;
+    for (let index = 1; index < ordered.length; index += 1) {
+      const gap = ordered[index].rect.left - ordered[index - 1].rect.right;
+      if (gap < 4 || gap > 40) return null;
+    }
+    return { container, rect, cards: ordered.map(({ card }) => card) };
+  }).filter(Boolean);
+  const innermostGroups = groups.filter((candidate) => !groups.some((other) => other !== candidate
+    && isDescendantOf(other.container, candidate.container)));
+  if (innermostGroups.length !== 1) return null;
+
+  const group = innermostGroups[0];
+  const groupCenter = group.rect.left + (group.rect.width / 2);
+  const composerCandidates = [...document.querySelectorAll('[role="textbox"]')].flatMap((textbox) => {
+    const textboxRect = textbox.getBoundingClientRect?.();
+    if (!hasFiniteRect(textboxRect)) return [];
+    const matches = [];
+    for (let current = textbox.parentElement, depth = 0; current && depth < 10; current = current.parentElement, depth += 1) {
+      const rect = current.getBoundingClientRect?.();
+      if (!hasFiniteRect(rect)) continue;
+      let style;
+      try {
+        style = document.defaultView?.getComputedStyle?.(current);
+      } catch {
+        continue;
+      }
+      const radius = String(style?.borderRadius ?? "");
+      const descendantButtons = current.querySelectorAll?.("button")?.length ?? 0;
+      if (hasVisibleBackground(style)
+        && radius !== ""
+        && radius !== "0px"
+        && rect.width >= group.rect.width * 0.9
+        && rect.width <= group.rect.width + 96
+        && rect.height >= 40
+        && rect.height <= 160
+        && rect.top >= group.rect.bottom + 80
+        && rect.bottom >= viewport.height - 40
+        && rect.bottom <= viewport.height + 24
+        && Math.abs((rect.left + (rect.width / 2)) - groupCenter) <= 32
+        && rect.left <= textboxRect.left
+        && rect.right >= textboxRect.right
+        && descendantButtons >= 3
+        && descendantButtons <= 8) matches.push(current);
+    }
+    return matches;
+  });
+  const uniqueComposers = [...new Set(composerCandidates)];
+  return uniqueComposers.length === 1
+    ? { cards: group.cards, composer: uniqueComposers[0] }
+    : null;
+}
+
 function nativeComposerSurface(document, composerElement, viewport) {
   const candidates = [...document.querySelectorAll('[role="presentation"]')].filter((element) => {
-    const sharesComposerAncestry = isDescendantOf(element, composerElement)
-      || isDescendantOf(composerElement, element);
+    const sharesComposerAncestry = composerElement
+      ? isDescendantOf(element, composerElement) || isDescendantOf(composerElement, element)
+      : Boolean(element.querySelector?.("textarea")
+        || element.querySelector?.('[contenteditable="true"]')
+        || element.querySelector?.('[role="textbox"]'));
     if (!sharesComposerAncestry || typeof element?.getBoundingClientRect !== "function") return false;
     let style;
     try {
@@ -795,10 +995,25 @@ export function installTheme({
     }
     const sidebarElement = discoverSidebarAnchor(document, viewport);
     const sidebarRect = sidebarElement?.getBoundingClientRect?.();
-    const mainSurface = sidebarRect && nativeMainSurface(document, viewport, sidebarRect.right);
+    const mainSurface = nativeMainSurface(document, viewport, sidebarRect?.right ?? 0);
+    if (mainSurface) mainSurface.setAttribute(NATIVE_SURFACE_ATTRIBUTE, "true");
     if (sidebarElement && mainSurface) {
-      mainSurface.setAttribute(NATIVE_SURFACE_ATTRIBUTE, "true");
       sidebarElement.setAttribute(NATIVE_SIDEBAR_ATTRIBUTE, "true");
+    }
+    const homeMode = nativeHomeModeSurfaces(document, workspaceViewport);
+    const codexHome = nativeCodexHomeSurfaces(
+      document,
+      workspaceViewport,
+      sidebarRect?.right ?? 0
+    );
+    const homeComposerSurface = nativeHomeComposerSurface(document, workspaceViewport, homeMode)
+      ?? codexHome?.composer
+      ?? null;
+    homeMode?.track.setAttribute(NATIVE_HOME_MODE_TRACK_ATTRIBUTE, "true");
+    homeMode?.selection.setAttribute(NATIVE_HOME_MODE_SELECTION_ATTRIBUTE, "true");
+    homeComposerSurface?.setAttribute(NATIVE_HOME_COMPOSER_SURFACE_ATTRIBUTE, "true");
+    for (const card of codexHome?.cards ?? []) {
+      card.setAttribute(NATIVE_HOME_SUGGESTION_ATTRIBUTE, "true");
     }
     const anchors = discoverCockpitAnchors(document, workspaceViewport);
     for (const backdrop of nativeWritingBlockBackdrops(document, workspaceViewport, mainSurface, sidebarRect?.right ?? 0)) {
@@ -819,16 +1034,16 @@ export function installTheme({
       composerRect: anchors.composerElement.getBoundingClientRect(),
       density
     });
-    const composerSurface = layout && nativeComposerSurface(document, anchors.composerElement, workspaceViewport);
+    const composerSurface = nativeComposerSurface(document, anchors?.composerElement ?? null, workspaceViewport);
     const composerBackdrop = layout && nativeComposerBackdrop(document, anchors.composerElement, workspaceViewport);
+    composerSurface?.setAttribute(NATIVE_COMPOSER_SURFACE_ATTRIBUTE, "true");
+    composerBackdrop?.setAttribute(NATIVE_COMPOSER_BACKDROP_ATTRIBUTE, "true");
     if (!layout || !mainSurface) {
       currentLayout = null;
       clearCockpitVariables();
       shell.setAttribute("data-prime-knight-layout", "native");
       return null;
     }
-    composerSurface?.setAttribute(NATIVE_COMPOSER_SURFACE_ATTRIBUTE, "true");
-    composerBackdrop?.setAttribute(NATIVE_COMPOSER_BACKDROP_ATTRIBUTE, "true");
     currentLayout = layout;
     for (const [name, value] of Object.entries(cockpitCssVariables(layout))) {
       shell.style.setProperty(name, value);
