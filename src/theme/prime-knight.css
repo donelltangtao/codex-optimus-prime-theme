@@ -71,6 +71,19 @@
   background-image: none !important;
 }
 
+[data-prime-knight-native-home-mode-track="true"] {
+  background-color: rgb(8 13 20 / 0.18) !important;
+}
+
+[data-prime-knight-native-home-mode-selection="true"],
+[data-prime-knight-native-home-composer-surface="true"] {
+  background-color: rgb(8 13 20 / 0.38) !important;
+}
+
+[data-prime-knight-native-home-suggestion="true"] {
+  background-color: rgb(8 13 20 / 0.38) !important;
+}
+
 [data-prime-knight-native-side-panel="true"] {
   background-color: rgb(8 13 20 / 0.38) !important;
 }
