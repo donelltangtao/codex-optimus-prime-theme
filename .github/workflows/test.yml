@@ -1,0 +1,30 @@
+name: Verify v1
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: macos-14
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.10.0"
+      - name: Install WebP verification tools
+        run: brew install webp
+      - name: Run tests
+        run: npm test
+      - name: Verify backgrounds
+        run: npm run verify:backgrounds
+      - name: Scan release source
+        run: npm run privacy
+      - name: Build deterministic release
+        run: npm run release
