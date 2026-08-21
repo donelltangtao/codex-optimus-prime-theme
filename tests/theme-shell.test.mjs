@@ -226,6 +226,121 @@ function addCockpitAnchors(environment, {
   return { navigation, composerContainer, composerSurface, textarea };
 }
 
+function addHomeModeSurface(environment, { selected = "chat", composerHeight = 44 } = {}) {
+  environment.nativeContent.rect = {
+    left: 240,
+    top: 0,
+    right: environment.window.innerWidth,
+    bottom: environment.window.innerHeight,
+    width: environment.window.innerWidth - 240,
+    height: environment.window.innerHeight
+  };
+  const navigation = new FakeElement("nav");
+  navigation.rect = { left: 0, top: 0, right: 240, bottom: 900, width: 240, height: 900 };
+
+  const modeGroup = new FakeElement("div");
+  modeGroup.setAttribute("role", "group");
+  modeGroup.rect = { left: 739, top: 9, right: 915, bottom: 41, width: 176, height: 32 };
+  const modeTrack = new FakeElement("span");
+  modeTrack.rect = { left: 741, top: 9, right: 913, bottom: 41, width: 172, height: 32 };
+  modeTrack.computedStyle = { backgroundColor: "rgb(13, 13, 13)", borderRadius: "9999px", position: "absolute" };
+  const modeSelection = new FakeElement("span");
+  const selectionLeft = selected === "chat" ? 741 : 827;
+  modeSelection.rect = { left: selectionLeft, top: 8, right: selectionLeft + 86, bottom: 42, width: 86, height: 34 };
+  modeSelection.computedStyle = { backgroundColor: "rgb(45, 45, 45)", borderRadius: "9999px", position: "relative" };
+  const chatButton = new FakeElement("button");
+  chatButton.setAttribute("aria-pressed", selected === "chat" ? "true" : "false");
+  chatButton.rect = { left: 741, top: 11, right: 827, bottom: 39, width: 86, height: 28 };
+  const workButton = new FakeElement("button");
+  workButton.setAttribute("aria-pressed", selected === "work" ? "true" : "false");
+  workButton.rect = { left: 827, top: 11, right: 913, bottom: 39, width: 86, height: 28 };
+  modeGroup.append(modeTrack, modeSelection, chatButton, workButton);
+
+  const composerSurface = new FakeElement("div");
+  composerSurface.rect = {
+    left: 507.5,
+    top: 455.1,
+    right: 1147.5,
+    bottom: 455.1 + composerHeight,
+    width: 640,
+    height: composerHeight
+  };
+  composerSurface.computedStyle = {
+    backgroundColor: "rgb(45, 45, 45)",
+    borderRadius: composerHeight > 60 ? "25px" : "9999px",
+    position: "relative"
+  };
+  const presentation = new FakeElement("div");
+  presentation.setAttribute("role", "presentation");
+  presentation.rect = { ...composerSurface.rect };
+  const textbox = new FakeElement("div");
+  textbox.setAttribute("role", "textbox");
+  textbox.setAttribute("contenteditable", "true");
+  textbox.rect = {
+    left: composerSurface.rect.left + 40,
+    top: composerSurface.rect.top + 8,
+    right: composerSurface.rect.right - 40,
+    bottom: composerSurface.rect.bottom - 8,
+    width: composerSurface.rect.width - 80,
+    height: composerSurface.rect.height - 16
+  };
+  presentation.append(textbox);
+  composerSurface.append(presentation);
+  environment.nativeContent.append(navigation, modeGroup, composerSurface);
+  return { navigation, modeGroup, modeTrack, modeSelection, chatButton, workButton, composerSurface, textbox };
+}
+
+function addCodexHomeSurface(environment) {
+  environment.nativeContent.rect = {
+    left: 240,
+    top: 0,
+    right: environment.window.innerWidth,
+    bottom: environment.window.innerHeight,
+    width: environment.window.innerWidth - 240,
+    height: environment.window.innerHeight
+  };
+  const navigation = new FakeElement("nav");
+  navigation.rect = { left: 0, top: 0, right: 240, bottom: 900, width: 240, height: 900 };
+  const unrelatedCard = new FakeElement("button");
+  unrelatedCard.rect = { left: 280, top: 484, right: 448, bottom: 588, width: 168, height: 104 };
+  unrelatedCard.computedStyle = { backgroundColor: "rgb(24, 24, 24)", borderRadius: "20px" };
+  unrelatedCard.append(new FakeElement("span"), new FakeElement("span"));
+
+  const suggestionGrid = new FakeElement("div");
+  suggestionGrid.rect = { left: 472.5, top: 484.5, right: 1182.5, bottom: 588.5, width: 710, height: 104 };
+  const suggestionCards = [472.5, 653, 833.5, 1014].map((left) => {
+    const wrapper = new FakeElement("div");
+    wrapper.rect = { left, top: 484.5, right: left + 168.5, bottom: 588.5, width: 168.5, height: 104 };
+    const card = new FakeElement("button");
+    card.rect = { ...wrapper.rect };
+    card.computedStyle = { backgroundColor: "rgb(24, 24, 24)", borderRadius: "20px" };
+    card.append(new FakeElement("span"), new FakeElement("span"));
+    wrapper.append(card);
+    suggestionGrid.append(wrapper);
+    return card;
+  });
+
+  const composerPresentation = new FakeElement("div");
+  composerPresentation.setAttribute("role", "presentation");
+  composerPresentation.rect = { left: 459.5, top: 809, right: 1195.5, bottom: 907, width: 736, height: 98 };
+  const composerSurface = new FakeElement("div");
+  composerSurface.rect = { ...composerPresentation.rect };
+  composerSurface.computedStyle = {
+    backgroundColor: "rgb(45, 45, 45)",
+    borderRadius: "25px",
+    position: "relative"
+  };
+  const textbox = new FakeElement("div");
+  textbox.setAttribute("role", "textbox");
+  textbox.setAttribute("contenteditable", "true");
+  textbox.rect = { left: 471.5, top: 823, right: 1183.5, bottom: 867, width: 712, height: 44 };
+  composerSurface.append(textbox);
+  for (let index = 0; index < 5; index += 1) composerSurface.append(new FakeElement("button"));
+  composerPresentation.append(composerSurface);
+  environment.nativeContent.append(navigation, unrelatedCard, suggestionGrid, composerPresentation);
+  return { navigation, unrelatedCard, suggestionCards, composerSurface };
+}
+
 test("theme shell cannot intercept or resize Codex", async () => {
   const hostRule = cssText.match(/#prime-knight-shell\s*\{([^}]*)\}/)?.[1] ?? "";
   const contentRule = cssText.match(/\[data-prime-knight-content-layer="true"\]\s*\{([^}]*)\}/)?.[1] ?? "";
@@ -368,6 +483,179 @@ test("titlebar-shifted main surface remains eligible for background tinting", ()
   const theme = installTheme({ document, window, initialHour: "08", testMode: true, cssText });
 
   assert.equal(nativeContent.getAttribute("data-prime-knight-native-surface"), "true");
+  theme.destroy();
+});
+
+test("chat and work home modes reveal the background through their mode toggle and centered composer", () => {
+  for (const fixture of [
+    { selected: "chat", composerHeight: 44 },
+    { selected: "work", composerHeight: 98 }
+  ]) {
+    const environment = createFakeEnvironment();
+    const { document, window } = environment;
+    const { modeTrack, modeSelection, composerSurface } = addHomeModeSurface(environment, fixture);
+    const before = {
+      track: modeTrack.getBoundingClientRect(),
+      selection: modeSelection.getBoundingClientRect(),
+      composer: composerSurface.getBoundingClientRect()
+    };
+
+    const theme = installTheme({ document, window, initialHour: "08", testMode: true, cssText });
+
+    assert.equal(modeTrack.getAttribute("data-prime-knight-native-home-mode-track"), "true");
+    assert.equal(modeSelection.getAttribute("data-prime-knight-native-home-mode-selection"), "true");
+    assert.equal(composerSurface.getAttribute("data-prime-knight-native-home-composer-surface"), "true");
+    assert.deepEqual(modeTrack.getBoundingClientRect(), before.track);
+    assert.deepEqual(modeSelection.getBoundingClientRect(), before.selection);
+    assert.deepEqual(composerSurface.getBoundingClientRect(), before.composer);
+
+    theme.destroy();
+    assert.equal(modeTrack.getAttribute("data-prime-knight-native-home-mode-track"), null);
+    assert.equal(modeSelection.getAttribute("data-prime-knight-native-home-mode-selection"), null);
+    assert.equal(composerSurface.getAttribute("data-prime-knight-native-home-composer-surface"), null);
+  }
+});
+
+test("home mode detection accepts browser NodeList child nodes", () => {
+  const environment = createFakeEnvironment();
+  const { document, window } = environment;
+  const { modeGroup, modeTrack, modeSelection } = addHomeModeSurface(environment);
+  const nodes = [...modeGroup.childNodes];
+  modeGroup.childNodes = {
+    length: nodes.length,
+    [Symbol.iterator]: function* iterate() { yield* nodes; }
+  };
+  nodes.forEach((node, index) => { modeGroup.childNodes[index] = node; });
+
+  const theme = installTheme({ document, window, initialHour: "08", testMode: true, cssText });
+
+  assert.equal(modeTrack.getAttribute("data-prime-knight-native-home-mode-track"), "true");
+  assert.equal(modeSelection.getAttribute("data-prime-knight-native-home-mode-selection"), "true");
+  theme.destroy();
+});
+
+test("home mode surfaces survive both toggle directions while the selection animation lags", () => {
+  const environment = createFakeEnvironment();
+  const { document, window, nativeContent } = environment;
+  const {
+    modeTrack,
+    modeSelection,
+    chatButton,
+    workButton,
+    composerSurface: initialComposer
+  } = addHomeModeSurface(environment, { selected: "work", composerHeight: 98 });
+  const theme = installTheme({ document, window, initialHour: "08", testMode: true, cssText });
+
+  const replaceComposer = (previous, height) => {
+    previous.remove();
+    const surface = new FakeElement("div");
+    surface.rect = { left: 507.5, top: 455.1, right: 1147.5, bottom: 455.1 + height, width: 640, height };
+    surface.computedStyle = {
+      backgroundColor: "rgb(45, 45, 45)",
+      borderRadius: height > 60 ? "25px" : "9999px",
+      position: "relative"
+    };
+    const presentation = new FakeElement("div");
+    presentation.setAttribute("role", "presentation");
+    presentation.rect = { ...surface.rect };
+    const textbox = new FakeElement("div");
+    textbox.setAttribute("role", "textbox");
+    textbox.setAttribute("contenteditable", "true");
+    textbox.rect = {
+      left: 548.5,
+      top: 463.1,
+      right: 1106.5,
+      bottom: 447.1 + height,
+      width: 558,
+      height: height - 16
+    };
+    presentation.append(textbox);
+    surface.append(presentation);
+    nativeContent.append(surface);
+    return surface;
+  };
+
+  chatButton.setAttribute("aria-pressed", "true");
+  workButton.setAttribute("aria-pressed", "false");
+  const chatComposer = replaceComposer(initialComposer, 44);
+  theme.refreshViewport();
+
+  assert.equal(modeTrack.getAttribute("data-prime-knight-native-home-mode-track"), "true");
+  assert.equal(modeSelection.getAttribute("data-prime-knight-native-home-mode-selection"), "true");
+  assert.equal(chatComposer.getAttribute("data-prime-knight-native-home-composer-surface"), "true");
+
+  modeSelection.rect = { left: 741, top: 8, right: 827, bottom: 42, width: 86, height: 34 };
+  chatButton.setAttribute("aria-pressed", "false");
+  workButton.setAttribute("aria-pressed", "true");
+  const workComposer = replaceComposer(chatComposer, 98);
+  theme.refreshViewport();
+
+  assert.equal(modeTrack.getAttribute("data-prime-knight-native-home-mode-track"), "true");
+  assert.equal(modeSelection.getAttribute("data-prime-knight-native-home-mode-selection"), "true");
+  assert.equal(workComposer.getAttribute("data-prime-knight-native-home-composer-surface"), "true");
+  theme.destroy();
+});
+
+test("Codex home reveals only its four suggestion cards and bottom composer", () => {
+  const environment = createFakeEnvironment();
+  const { document, window } = environment;
+  const { unrelatedCard, suggestionCards, composerSurface } = addCodexHomeSurface(environment);
+  const before = {
+    cards: suggestionCards.map((card) => card.getBoundingClientRect()),
+    composer: composerSurface.getBoundingClientRect()
+  };
+
+  const theme = installTheme({ document, window, initialHour: "08", testMode: true, cssText });
+
+  for (const card of suggestionCards) {
+    assert.equal(card.getAttribute("data-prime-knight-native-home-suggestion"), "true");
+  }
+  assert.equal(composerSurface.getAttribute("data-prime-knight-native-home-composer-surface"), "true");
+  assert.equal(unrelatedCard.getAttribute("data-prime-knight-native-home-suggestion"), null);
+  assert.deepEqual(suggestionCards.map((card) => card.getBoundingClientRect()), before.cards);
+  assert.deepEqual(composerSurface.getBoundingClientRect(), before.composer);
+
+  theme.destroy();
+  for (const card of suggestionCards) {
+    assert.equal(card.getAttribute("data-prime-knight-native-home-suggestion"), null);
+  }
+  assert.equal(composerSurface.getAttribute("data-prime-knight-native-home-composer-surface"), null);
+});
+
+test("main and composer tints survive a sidebar collapse and reopen cycle", () => {
+  const environment = createFakeEnvironment();
+  const { document, window, nativeContent } = environment;
+  const { navigation, composerContainer, composerSurface, textarea } = addCockpitAnchors(environment);
+  const expanded = {
+    main: { ...nativeContent.getBoundingClientRect() },
+    composer: { ...composerContainer.getBoundingClientRect() },
+    surface: { ...composerSurface.getBoundingClientRect() },
+    input: { ...textarea.getBoundingClientRect() }
+  };
+  const theme = installTheme({ document, window, initialHour: "08", testMode: true, cssText });
+
+  navigation.remove();
+  nativeContent.rect = { left: 0, top: 0, right: 1440, bottom: 900, width: 1440, height: 900 };
+  composerContainer.rect = { left: 0, top: 720, right: 1440, bottom: 900, width: 1440, height: 180 };
+  composerSurface.rect = { left: 80, top: 736, right: 1360, bottom: 884, width: 1280, height: 148 };
+  textarea.rect = { left: 100, top: 756, right: 1340, bottom: 864, width: 1240, height: 108 };
+  theme.refreshViewport();
+
+  assert.equal(theme.metrics.layoutStatus, "native");
+  assert.equal(nativeContent.getAttribute("data-prime-knight-native-surface"), "true");
+  assert.equal(composerSurface.getAttribute("data-prime-knight-native-composer-surface"), "true");
+
+  nativeContent.append(navigation);
+  nativeContent.rect = expanded.main;
+  composerContainer.rect = expanded.composer;
+  composerSurface.rect = expanded.surface;
+  textarea.rect = expanded.input;
+  theme.refreshViewport();
+
+  assert.equal(theme.metrics.layoutStatus, "anchored");
+  assert.equal(nativeContent.getAttribute("data-prime-knight-native-surface"), "true");
+  assert.equal(navigation.getAttribute("data-prime-knight-native-sidebar"), "true");
+  assert.equal(composerSurface.getAttribute("data-prime-knight-native-composer-surface"), "true");
   theme.destroy();
 });
 
@@ -1114,6 +1402,13 @@ test("sidebar and composer tints preserve readability without layout overrides",
     assert.match(rule, /background-color:\s*rgb\([^)]*\/\s*0\.[0-9]+\)\s*!important/);
     assert.doesNotMatch(rule, /(?:padding|margin|transform|scale|position|z-index|width|height)\s*:/);
   }
+});
+
+test("Codex home suggestion CSS changes only the four card backgrounds", () => {
+  const rule = cssText.match(/\[data-prime-knight-native-home-suggestion="true"\]\s*\{([^}]*)\}/)?.[1] ?? "";
+
+  assert.match(rule, /background-color:\s*rgb\(8 13 20 \/ 0\.38\)\s*!important/);
+  assert.deepEqual([...rule.matchAll(/([a-z-]+)\s*:/g)].map((match) => match[1]), ["background-color"]);
 });
 
 test("composer surround CSS removes only the native gradient paint", () => {
