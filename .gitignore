@@ -1,0 +1,10 @@
+.worktrees/
+node_modules/
+.DS_Store
+artifacts/
+dist/
+screenshots/
+.runtime/
+config/local-acceptance.json
+work/pet-prime-knight/
+*.zip
