@@ -1,0 +1,160 @@
+#prime-knight-shell {
+  --prime-knight-fit: cover;
+  --prime-knight-position: center center;
+  --prime-knight-overlay: 0.48;
+  --prime-knight-chrome-density: full;
+  --prime-knight-top-chrome-px: 48px;
+  --prime-knight-bottom-chrome-px: 48px;
+  display: contents;
+  pointer-events: none;
+}
+
+#prime-knight-shell,
+#prime-knight-shell * {
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.prime-knight-background,
+.prime-knight-readability-mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+.prime-knight-background {
+  z-index: 0;
+  background-color: #031526;
+  background-image: var(--prime-knight-background-image, none);
+  background-position: var(--prime-knight-position);
+  background-repeat: no-repeat;
+  background-size: var(--prime-knight-fit);
+  opacity: 0;
+  transition: opacity 1200ms ease;
+}
+
+.prime-knight-background.is-visible {
+  opacity: 1;
+}
+
+.prime-knight-readability-mask {
+  z-index: 0;
+  background:
+    linear-gradient(90deg, rgb(3 13 29 / calc(var(--prime-knight-overlay) + 0.16)) 0%, transparent 68%),
+    linear-gradient(180deg, rgb(2 9 20 / 0.28), rgb(2 9 20 / var(--prime-knight-overlay)));
+}
+
+[data-prime-knight-content-layer="true"] {
+  position: relative;
+  z-index: 1;
+}
+
+[data-prime-knight-native-surface="true"] {
+  background-color: rgb(8 13 20 / 0.38) !important;
+}
+
+[data-prime-knight-native-sidebar="true"] {
+  background-color: rgb(8 13 20 / 0.38) !important;
+  backdrop-filter: blur(14px);
+}
+
+[data-prime-knight-native-composer-surface="true"] {
+  background-color: rgb(8 13 20 / 0.38) !important;
+}
+
+[data-prime-knight-native-composer-backdrop="true"] {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+[data-prime-knight-native-side-panel="true"] {
+  background-color: rgb(8 13 20 / 0.38) !important;
+}
+
+[data-prime-knight-native-side-panel-cover="true"] {
+  background-color: transparent !important;
+  --trees-bg-override: transparent !important;
+}
+
+[data-prime-knight-native-output-popover="true"] {
+  background-color: rgb(8 13 20 / 0.38) !important;
+}
+
+[data-prime-knight-native-output-popover-header="true"] {
+  background-color: transparent !important;
+}
+
+[data-prime-knight-native-output-popover-header="true"]::before {
+  background-color: transparent !important;
+}
+
+[data-prime-knight-native-writing-backdrop="true"] {
+  background-color: rgb(8 13 20 / 0.38) !important;
+}
+
+[data-prime-knight-native-writing-action="true"] {
+  background-color: rgb(8 13 20 / 0.38) !important;
+}
+
+[data-prime-knight-native-code-block="true"] {
+  background-color: transparent !important;
+}
+
+[data-prime-knight-native-code-block-header="true"] {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+.prime-knight-chrome {
+  position: fixed;
+  z-index: 2;
+  filter: drop-shadow(0 0 6px rgb(26 173 255 / 0.42));
+}
+
+.prime-knight-chamber-frame {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+.prime-knight-chamber-frame-sidebar {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--prime-knight-sidebar-right);
+  background-image: var(--prime-knight-frame-chamber-sidebar);
+}
+
+.prime-knight-chamber-frame-main {
+  top: 0;
+  left: var(--prime-knight-main-left);
+  width: var(--prime-knight-main-width);
+  height: var(--prime-knight-main-height);
+  background-image: var(--prime-knight-frame-chamber-main);
+}
+
+.prime-knight-chamber-frame-composer {
+  top: var(--prime-knight-composer-top);
+  right: 0;
+  bottom: 0;
+  left: var(--prime-knight-main-left);
+  background-image: var(--prime-knight-frame-chamber-composer);
+}
+
+#prime-knight-shell[data-prime-knight-layout="native"] .prime-knight-chrome {
+  display: none;
+}
+
+#prime-knight-shell[data-prime-knight-density="minimal"] .prime-knight-chamber-frame {
+  opacity: 0.9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prime-knight-background {
+    transition-duration: 0ms;
+  }
+}
