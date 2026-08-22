@@ -5,6 +5,21 @@
 按住 Control 点击对应的 `.command` 文件，选择“打开”，再确认一次。请只从
 本仓库的正式 Release 下载，并先核对 Release 页面公布的 SHA-256。
 
+## 安装完成后从哪里启动
+
+安装程序会直接启动主题，并把 `Codex 擎天柱主题.app` 安装到当前用户个人
+目录下的 `Applications` 文件夹（`~/Applications`），同时在桌面创建同名
+快捷方式。日常使用时直接双击桌面快捷方式即可。
+
+如果桌面原本已有同名文件，安装程序会保留它，不会覆盖；请改到“访达 →
+前往 → 个人 → Applications”中打开 `Codex 擎天柱主题.app`。解压目录里的
+`Start Prime Knight Theme.command` 也可以作为备用入口。
+
+如果 macOS 第一次阻止打开启动 App，请按住 Control 点击桌面快捷方式或
+`~/Applications/Codex 擎天柱主题.app`，选择“打开”，再确认一次。这是因为
+非官方同人主题使用本地临时签名；不要关闭 Gatekeeper，也不要手动删除隔离
+属性。
+
 ## 提示需要 Node.js 20.10 或更新版本
 
 安装当前受支持的 Node.js LTS，然后重新双击安装入口。安装脚本会在修改任何
@@ -19,7 +34,8 @@ macOS Gatekeeper 的应用。请从官方渠道重新安装 Codex/ChatGPT 桌面
 ## 提示主题已经运行
 
 直接使用已打开的独立主题窗口即可。如果窗口状态异常，先双击
-`Restore Native Codex.command`，确认官方界面重新打开，再双击
+`Restore Native Codex.command`，确认官方界面重新打开，再双击桌面的
+`Codex 擎天柱主题.app`。也可以使用解压目录里的
 `Start Prime Knight Theme.command`。
 
 ## 背景没有显示或某个区域仍是完全不透明

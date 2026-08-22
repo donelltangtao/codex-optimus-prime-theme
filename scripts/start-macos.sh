@@ -86,6 +86,16 @@ pk_preserve_watcher_failure_log() {
   fi
 }
 
+pk_recover_dead_theme_runtime() {
+  if pk_launch_agent_plist_present; then
+    pk_bootout_launch_agent || return 1
+    pk_remove_owned_launch_agent || return 1
+  elif pk_watcher_record_present; then
+    pk_stop_verified_watcher || return 1
+  fi
+  pk_clear_runtime_state
+}
+
 pk_start_watcher() {
   local port="$1" token watcher_pid watcher_start ready_file attempt command owner_uid current_uid
   token="$(pk_generate_token)" || return 1
@@ -169,15 +179,28 @@ start_main() {
   pk_require_supported_environment || return $?
   pk_verify_installation_manifest || return 1
   pk_require_cdp_capability || return $?
-  local existing_pid existing_port codex_app port launch_token codex_app_profile_dir
+  local existing_pid existing_port identity_status codex_app port launch_token codex_app_profile_dir
   if existing_pid="$(pk_verified_theme_pid)"; then
     existing_port="$(pk_recorded_theme_port)" || existing_port=""
-    if pk_valid_port "$existing_port" && pk_verified_theme_codex_identity "$existing_port" >/dev/null; then
-      printf 'Prime Knight theme is already running (watcher %s)\n' "$existing_pid"
-      return 0
+    identity_status=1
+    if pk_valid_port "$existing_port"; then
+      if pk_verified_theme_codex_identity "$existing_port" >/dev/null; then
+        printf 'Prime Knight theme is already running (watcher %s)\n' "$existing_pid"
+        return 0
+      else
+        identity_status=$?
+      fi
     fi
-    pk_error "watcher state exists without the exact theme Codex identity; run Restore Native Codex"
-    return 1
+    if [[ "$identity_status" -eq 3 ]]; then
+      if ! pk_recover_dead_theme_runtime; then
+        pk_error "dead theme runtime could not be recovered safely; run Restore Native Codex"
+        return 1
+      fi
+      printf 'Prime Knight: recovered stale runtime from a closed theme window\n'
+    else
+      pk_error "watcher state exists without the exact theme Codex identity; run Restore Native Codex"
+      return 1
+    fi
   fi
   if pk_runtime_record_present; then
     pk_error "recoverable runtime state exists; run Restore Native Codex before starting again"

@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.2 — 2026-08-22
+
+Launcher and installation-discovery patch.
+
+- Includes the dedicated `Codex 擎天柱主题.app` in the public release ZIP.
+- Installs the launcher in `~/Applications`, creates a desktop shortcut, and
+  starts the themed window directly after installation.
+- Preserves unrelated applications or desktop items instead of overwriting
+  them, using a theme-specific ownership marker before any replacement.
+- Documents the one-time macOS Control-click procedure for the locally signed
+  launcher without weakening Gatekeeper.
+- Resolves Node.js for Finder and LaunchServices launches.
+- Safely recovers a closed themed Codex runtime on the next launch.
+- Leaves the accepted theme surfaces and all 24 hourly backgrounds unchanged.
+
 ## 1.0.1 — 2026-08-21
 
 Visual compatibility patch for current Codex and ChatGPT desktop layouts.

@@ -108,12 +108,12 @@ function isReleaseCandidatePath(file) {
 }
 
 async function releaseCandidatePaths() {
-  const tracked = (await execFile("git", ["ls-files"], { cwd: PROJECT_ROOT, encoding: "utf8" })).stdout;
-  const untracked = (await execFile("git", ["ls-files", "--others", "--exclude-standard"], {
+  const tracked = (await execFile("git", ["ls-files", "-z"], { cwd: PROJECT_ROOT, encoding: "utf8" })).stdout;
+  const untracked = (await execFile("git", ["ls-files", "-z", "--others", "--exclude-standard"], {
     cwd: PROJECT_ROOT,
     encoding: "utf8"
   })).stdout;
-  return [...new Set(`${tracked}\n${untracked}`.split(/\r?\n/u).filter(Boolean))]
+  return [...new Set(`${tracked}${untracked}`.split("\0").filter(Boolean))]
     .filter(isReleaseCandidatePath)
     .sort();
 }

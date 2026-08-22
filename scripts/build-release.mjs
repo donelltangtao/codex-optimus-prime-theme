@@ -12,7 +12,7 @@ import { scanPaths } from "./privacy-scan.mjs";
 
 const execFile = promisify(execFileCallback);
 const SCRIPT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const VERSION = "1.0.1";
+const VERSION = "1.0.2";
 const REPOSITORY_DIRECTORY = `codex-optimus-prime-theme-v${VERSION}`;
 const ARCHIVE_NAME = `${REPOSITORY_DIRECTORY}-macos.zip`;
 const FIXED_TIME = new Date("1980-01-01T00:00:00.000Z");
@@ -28,6 +28,17 @@ const FRAME_NAMES = [
   "chamber-main", "chamber-composer"
 ];
 const FRAME_PATHS = FRAME_NAMES.map((name) => `assets/frame/${name}.webp`);
+const LAUNCHER_APP_ROOT = "macos/Codex 擎天柱主题.app";
+const LAUNCHER_APP_PATHS = [
+  "Contents/Info.plist",
+  "Contents/MacOS/Codex擎天柱主题",
+  "Contents/PkgInfo",
+  "Contents/Resources/AppIcon.icns",
+  "Contents/_CodeSignature/CodeDirectory",
+  "Contents/_CodeSignature/CodeRequirements",
+  "Contents/_CodeSignature/CodeResources",
+  "Contents/_CodeSignature/CodeSignature"
+].map((relative) => `${LAUNCHER_APP_ROOT}/${relative}`);
 
 export const PUBLIC_REPOSITORY_PATHS = Object.freeze([
   ".github/workflows/test.yml",
@@ -36,6 +47,7 @@ export const PUBLIC_REPOSITORY_PATHS = Object.freeze([
   "CHANGELOG.md",
   "Install Prime Knight Theme.command",
   "LICENSE",
+  ...LAUNCHER_APP_PATHS,
   "NOTICE.md",
   "README.md",
   "README.zh-CN.md",
@@ -121,7 +133,8 @@ async function copyReleaseFile(projectRoot, repositoryPath, relative) {
   const destination = path.join(repositoryPath, relative);
   await fs.mkdir(path.dirname(destination), { recursive: true, mode: 0o755 });
   await fs.copyFile(source, destination, fs.constants.COPYFILE_EXCL);
-  const executable = relative.endsWith(".command") || relative.endsWith(".sh");
+  const executable = relative.endsWith(".command") || relative.endsWith(".sh")
+    || relative.startsWith(`${LAUNCHER_APP_ROOT}/Contents/MacOS/`);
   await fs.chmod(destination, executable ? 0o755 : 0o644);
   await fs.utimes(destination, FIXED_TIME, FIXED_TIME);
   if (stat.size !== (await fs.stat(destination)).size) {

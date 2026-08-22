@@ -17,6 +17,8 @@ const COMMAND_FILES = [
   "Verify Prime Knight Theme.command",
   "Restore Native Codex.command"
 ];
+const LAUNCHER_APP = "macos/Codex 擎天柱主题.app";
+const LAUNCHER_EXECUTABLE = `${LAUNCHER_APP}/Contents/MacOS/Codex擎天柱主题`;
 
 async function sha256(file) {
   return createHash("sha256").update(await fs.readFile(file)).digest("hex");
@@ -37,7 +39,7 @@ async function listTree(root, relative = "") {
 test("release metadata declares the public v1 product", async () => {
   const pkg = JSON.parse(await fs.readFile("package.json", "utf8"));
   assert.equal(pkg.name, "codex-prime-knight-theme");
-  assert.equal(pkg.version, "1.0.1");
+  assert.equal(pkg.version, "1.0.2");
   assert.equal(pkg.engines.node, ">=20.10.0");
   assert.match(await fs.readFile("README.md", "utf8"), /codex擎天柱主题 v1/i);
   assert.match(await fs.readFile("README.zh-CN.md", "utf8"), /双击.*Install Prime Knight Theme\.command/s);
@@ -66,6 +68,8 @@ test("public repository allowlist excludes local evidence and the optional pet",
   assert.equal(PUBLIC_REPOSITORY_PATHS.includes("README.md"), true);
   assert.equal(PUBLIC_REPOSITORY_PATHS.includes("assets/backgrounds/20.webp"), true);
   assert.equal(PUBLIC_REPOSITORY_PATHS.includes("src/runtime/watcher.mjs"), true);
+  assert.equal(PUBLIC_REPOSITORY_PATHS.includes(`${LAUNCHER_APP}/Contents/Info.plist`), true);
+  assert.equal(PUBLIC_REPOSITORY_PATHS.includes(LAUNCHER_EXECUTABLE), true);
 });
 
 test("release builder creates one deterministic, private-data-free macOS ZIP", async (t) => {
@@ -92,6 +96,8 @@ test("release builder creates one deterministic, private-data-free macOS ZIP", a
     const stat = await fs.stat(path.join(releaseRoot, command));
     assert.notEqual(stat.mode & 0o111, 0, `${command} must be executable`);
   }
+  const launcherExecutable = await fs.stat(path.join(releaseRoot, LAUNCHER_EXECUTABLE));
+  assert.notEqual(launcherExecutable.mode & 0o111, 0, `${LAUNCHER_EXECUTABLE} must be executable`);
 
   const privacy = JSON.parse(await fs.readFile(first.privacyReportPath, "utf8"));
   assert.equal(privacy.ok, true);
