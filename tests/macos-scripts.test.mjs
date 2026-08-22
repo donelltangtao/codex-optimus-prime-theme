@@ -10,6 +10,8 @@ import { fileURLToPath } from "node:url";
 const execFile = promisify(execFileCallback);
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const installDirectory = (home) => path.join(home, "Library/Application Support/Codex Prime Knight Theme");
+const launcherApplication = (home) => path.join(home, "Applications/Codex 擎天柱主题.app");
+const launcherShortcut = (home) => path.join(home, "Desktop/Codex 擎天柱主题.app");
 
 const lifecycleScripts = [
   "install-macos.sh",
@@ -864,6 +866,7 @@ test("install is idempotent, quotes spaced paths, and preserves unrelated files"
 
   result = await runSourced("scripts/install-macos.sh", body, { env });
   assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stderr, /desktop shortcut already exists and was preserved/i);
   assert.equal(await fs.readFile(manifest, "utf8"), firstManifest);
   assert.equal((await fs.stat(packagePath)).mtimeMs, firstStat.mtimeMs);
   assert.equal(await fs.readFile(unrelated, "utf8"), "keep me");
@@ -871,6 +874,69 @@ test("install is idempotent, quotes spaced paths, and preserves unrelated files"
   assert.match(firstManifest, /assets\/backgrounds\/23\.webp/);
   assert.match(firstManifest, /src\/runtime\/injector\.mjs/);
   assert.doesNotMatch(firstManifest, /\.codex\/pets/);
+});
+
+test("install places the launcher in user Applications, creates a desktop shortcut, and starts the installed theme entry", async (t) => {
+  const home = await temporaryHome(t, "Prime Knight Launcher Install ");
+  const resolvedHome = await fs.realpath(home);
+  const startMarker = path.join(home, "started-theme.txt");
+  const forbiddenOpenMarker = path.join(home, "opened-launcher.txt");
+  const body = [
+    'pk_require_supported_environment() { pk_validate_home; pk_require_node; };',
+    'pk_discover_codex_app() { printf "/fake/Codex.app\\n"; };',
+    'pk_verify_codex_signature() { :; };',
+    'pk_start_installed_theme() { printf "%s\\n" "$PK_INSTALL_DIR/Start Prime Knight Theme.command" > "$START_MARKER"; };',
+    'pk_open_application() { printf "%s\\n" "$1" > "$FORBIDDEN_OPEN_MARKER"; return 1; };',
+    'install_and_launch_main'
+  ].join(" ");
+
+  const result = await runSourced("scripts/install-macos.sh", body, {
+    env: { HOME: home, START_MARKER: startMarker, FORBIDDEN_OPEN_MARKER: forbiddenOpenMarker }
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  const application = launcherApplication(resolvedHome);
+  const executable = path.join(application, "Contents/MacOS/Codex擎天柱主题");
+  assert.notEqual((await fs.stat(executable)).mode & 0o111, 0);
+  assert.equal((await fs.lstat(launcherShortcut(resolvedHome))).isSymbolicLink(), true);
+  assert.equal(await fs.readlink(launcherShortcut(resolvedHome)), application);
+  assert.equal(
+    (await fs.readFile(startMarker, "utf8")).trim(),
+    path.join(installDirectory(resolvedHome), "Start Prime Knight Theme.command")
+  );
+  await assert.rejects(fs.access(forbiddenOpenMarker));
+  const owner = (await execFile("/usr/libexec/PlistBuddy", [
+    "-c",
+    "Print :PrimeKnightOwner",
+    path.join(application, "Contents/Info.plist")
+  ])).stdout.trim();
+  assert.equal(owner, "codex-prime-knight-theme:v1");
+});
+
+test("install never overwrites an unrelated app at the launcher destination", async (t) => {
+  const home = await temporaryHome(t, "Prime Knight Foreign Launcher ");
+  const application = launcherApplication(home);
+  const marker = path.join(application, "do-not-replace.txt");
+  await fs.mkdir(path.join(application, "Contents/MacOS"), { recursive: true });
+  await fs.writeFile(path.join(application, "Contents/Info.plist"), `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleIdentifier</key><string>io.github.donelltangtao.codex-prime-knight-launcher</string>
+<key>CFBundleExecutable</key><string>Codex擎天柱主题</string>
+</dict></plist>\n`);
+  await fs.writeFile(path.join(application, "Contents/MacOS/Codex擎天柱主题"), "#!/bin/bash\nexit 0\n", { mode: 0o755 });
+  await fs.writeFile(marker, "unrelated app\n");
+
+  const result = await runSourced("scripts/install-macos.sh", [
+    'pk_require_supported_environment() { pk_validate_home; pk_require_node; };',
+    'pk_discover_codex_app() { printf "/fake/Codex.app\\n"; };',
+    'pk_verify_codex_signature() { :; };',
+    'install_main'
+  ].join(" "), { env: { HOME: home } });
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /launcher|application|ownership/i);
+  assert.equal(await fs.readFile(marker, "utf8"), "unrelated app\n");
 });
 
 test("install refuses an existing directory without its ownership marker", async (t) => {
@@ -1076,7 +1142,7 @@ test("start refuses to erase a recoverable pending launch from an earlier failur
   await assert.rejects(fs.access(openMarker));
 });
 
-test("start does not report success for an orphan watcher without its exact theme Codex", async (t) => {
+test("start refuses an orphan watcher whose theme Codex identity is ambiguous", async (t) => {
   const home = await temporaryHome(t);
   const body = [
     'pk_require_supported_environment() { pk_validate_home; };',
@@ -1084,13 +1150,56 @@ test("start does not report success for an orphan watcher without its exact them
     'pk_require_cdp_capability() { :; };',
     'pk_verified_theme_pid() { printf "3131\\n"; };',
     'pk_recorded_theme_port() { printf "9341\\n"; };',
-    'pk_verified_theme_codex_identity() { return 3; };',
+    'pk_verified_theme_codex_identity() { return 1; };',
     'start_main'
   ].join(" ");
   const result = await runSourced("scripts/start-macos.sh", body, { env: { HOME: home } });
   assert.equal(result.status, 1, result.stderr);
   assert.match(result.stderr, /restore|identity/i);
   assert.doesNotMatch(result.stdout, /already running/i);
+});
+
+test("start safely recovers a dead theme Codex and launches its replacement", async (t) => {
+  const home = await temporaryHome(t);
+  const install = installDirectory(home);
+  const state = path.join(install, ".state");
+  const actions = path.join(home, "actions.log");
+  const launchAgentRemoved = path.join(home, "launch-agent-removed");
+  await fs.mkdir(state, { recursive: true });
+  await fs.writeFile(path.join(state, "watcher.pid"), "3131\n");
+  const body = [
+    'pk_require_supported_environment() { pk_validate_home; };',
+    'pk_verify_installation_manifest() { :; };',
+    'pk_require_cdp_capability() { :; };',
+    'pk_verified_theme_pid() { printf "3131\\n"; };',
+    'pk_recorded_theme_port() { printf "9341\\n"; };',
+    'pk_verified_theme_codex_identity() { return 3; };',
+    'pk_launch_agent_plist_present() { [[ ! -e "$LAUNCH_AGENT_REMOVED" ]]; };',
+    'pk_bootout_launch_agent() { printf "bootout\\n" >> "$ACTIONS"; };',
+    'pk_remove_owned_launch_agent() { printf "remove-plist\\n" >> "$ACTIONS"; : > "$LAUNCH_AGENT_REMOVED"; };',
+    'pk_discover_codex_app() { printf "/fake/Codex.app\\n"; };',
+    'pk_verify_codex_signature() { :; };',
+    'pk_choose_port() { printf "9342\\n"; };',
+    'pk_generate_token() { printf "abababababababababababababababab\\n"; };',
+    'pk_launch_codex_theme() { printf "launch\\n" >> "$ACTIONS"; };',
+    'pk_record_theme_codex() { printf "record\\n" >> "$ACTIONS"; /bin/rm -rf "$PK_STATE_DIR/launch.pending"; };',
+    'pk_start_watcher() { printf "watcher\\n" >> "$ACTIONS"; };',
+    'start_main'
+  ].join(" ");
+
+  const result = await runSourced("scripts/start-macos.sh", body, {
+    env: { HOME: home, ACTIONS: actions, LAUNCH_AGENT_REMOVED: launchAgentRemoved }
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual((await fs.readFile(actions, "utf8")).trim().split("\n"), [
+    "bootout",
+    "remove-plist",
+    "launch",
+    "record",
+    "watcher"
+  ]);
+  assert.match(result.stdout, /started/i);
 });
 
 async function watcherStopFixture(t, body) {

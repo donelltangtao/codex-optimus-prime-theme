@@ -1,0 +1,66 @@
+#!/bin/bash
+set -u
+
+umask 077
+
+pk_launcher_dialog() {
+  local message="$1"
+  if [[ "${PRIME_KNIGHT_LAUNCHER_NO_DIALOG:-0}" == "1" ]]; then
+    return 0
+  fi
+  /usr/bin/osascript -e "display dialog \"$message\" buttons {\"好\"} default button \"好\" with title \"Codex 擎天柱主题\"" >/dev/null 2>&1 || true
+}
+
+pk_launcher_fail() {
+  local message="$1"
+  printf 'Codex 擎天柱主题：%s\n' "$message" >&2
+  pk_launcher_dialog "$message"
+  return 1
+}
+
+if [[ -z "${HOME:-}" || "$HOME" != /* || "$HOME" == "/" || "$HOME" == *$'\n'* || "$HOME" == *$'\r'* ]]; then
+  pk_launcher_fail "无法确认当前用户目录，主题没有启动。" || exit 1
+fi
+
+resolved_home="$(cd "$HOME" 2>/dev/null && pwd -P)" || {
+  pk_launcher_fail "无法访问当前用户目录，主题没有启动。" || exit 1
+}
+
+# Finder and LaunchServices do not inherit the interactive shell PATH. Keep the
+# launcher deterministic while allowing the supported Node locations used by
+# Apple Silicon Homebrew, Intel Homebrew, Volta, and user-local installations.
+PATH="/usr/bin:/bin:/usr/sbin:/sbin"
+for node_dir in \
+  "$resolved_home/.local/bin" \
+  "$resolved_home/.volta/bin" \
+  "/opt/homebrew/bin" \
+  "/usr/local/bin"
+do
+  if [[ -x "$node_dir/node" ]]; then
+    PATH="$node_dir:$PATH"
+    break
+  fi
+done
+export PATH
+
+install_root="$resolved_home/Library/Application Support/Codex Prime Knight Theme"
+installed_launcher="$install_root/Start Prime Knight Theme.command"
+error_log="$install_root/launcher-app-error.log"
+
+if [[ ! -d "$install_root" || -L "$install_root" || ! -f "$installed_launcher" || -L "$installed_launcher" || ! -O "$installed_launcher" ]]; then
+  pk_launcher_fail "擎天柱主题尚未安装。请先运行安装程序，再打开此 App。" || exit 1
+fi
+
+output="$(/bin/bash "$installed_launcher" 2>&1)"
+status=$?
+if [[ "$status" -eq 0 ]]; then
+  /bin/rm -f "$error_log" 2>/dev/null || true
+  exit 0
+fi
+
+if [[ -d "$install_root" && ! -L "$install_root" ]]; then
+  printf '%s\n' "$output" > "$error_log" 2>/dev/null || true
+  /bin/chmod 600 "$error_log" 2>/dev/null || true
+fi
+printf '%s\n' "$output" >&2
+pk_launcher_fail "主题启动失败。错误详情已保存到主题安装目录中的 launcher-app-error.log。" || exit 1

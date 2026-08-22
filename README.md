@@ -16,7 +16,10 @@ any time.
   windows.
 - Readability treatments for the sidebar, composer, output/source popovers,
   writing cards, and code blocks without moving native controls.
-- Four double-click macOS entry points for install, start, verify, and restore.
+- A dedicated `Codex 擎天柱主题.app`, installed into the current user's
+  Applications folder with a desktop shortcut.
+- Four double-click macOS command entry points for install, fallback start,
+  verify, and restore.
 - Loopback-only runtime injection. The official app bundle and signature are
   never modified.
 
@@ -30,6 +33,14 @@ The optional Prime Knight pet experiment is not part of v1.
 - Keeps native text, controls, geometry, click regions, and all 24 backgrounds
   unchanged.
 
+## v1.0.2 patch
+
+- Bundles the dedicated `Codex 擎天柱主题.app` launcher in the public ZIP.
+- Installs the launcher into `~/Applications` and creates a desktop shortcut.
+- Opens the themed Codex window automatically when installation finishes.
+- Fixes Finder launches when Node.js is installed outside Finder's default
+  PATH, and safely recovers a theme window that was previously closed.
+
 ## Requirements
 
 - macOS on Apple silicon or Intel.
@@ -40,14 +51,27 @@ The optional Prime Knight pet experiment is not part of v1.
 ## Install
 
 1. Download and unzip
-   `codex-optimus-prime-theme-v1.0.1-macos.zip` from the GitHub Release.
+   `codex-optimus-prime-theme-v1.0.2-macos.zip` from the GitHub Release.
 2. Double-click `Install Prime Knight Theme.command`.
-3. Double-click `Start Prime Knight Theme.command`.
-4. Double-click `Verify Prime Knight Theme.command` to confirm the theme is
+3. The installer places `Codex 擎天柱主题.app` in your user Applications
+   folder (`~/Applications`), creates a desktop shortcut, and starts the
+   themed window directly.
+4. From then on, double-click the desktop `Codex 擎天柱主题.app`. If the
+   desktop name was already occupied, choose Finder → Go → Home, open the
+   `Applications` folder, and launch it there.
+5. Double-click `Verify Prime Knight Theme.command` to confirm the theme is
    healthy.
+
+`Start Prime Knight Theme.command` remains available in the unzipped folder as
+a fallback launcher.
 
 If macOS blocks a downloaded `.command` file, Control-click it, choose
 **Open**, and confirm once.
+
+The launcher App uses a local ad-hoc signature because this fan project is not
+distributed through the Mac App Store. If macOS blocks the App the first time,
+Control-click the installed App or desktop shortcut, choose **Open**, and
+confirm once. Do not disable Gatekeeper or remove quarantine attributes.
 
 ## Restore the official interface
 

@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -50,4 +51,13 @@ test("path scanning checks names and UTF-8 text but skips binary payload bytes",
   assert.equal(result.ok, false);
   assert.deepEqual(result.findings.map((finding) => finding.rule), ["clipboard-artifact"]);
   assert.equal(result.scanned, 3);
+});
+
+test("project privacy scan accepts the tracked Unicode launcher paths", () => {
+  const result = spawnSync(process.execPath, ["scripts/privacy-scan.mjs"], {
+    cwd: process.cwd(),
+    encoding: "utf8"
+  });
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.equal(JSON.parse(result.stdout).ok, true);
 });
